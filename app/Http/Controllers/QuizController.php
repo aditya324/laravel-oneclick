@@ -15,9 +15,9 @@ class QuizController extends Controller
     {
         $attemptCount = QuizAttempt::where('student_registration_id', $studentId)->count();
 
-        // if ($attemptCount >= 3) {
-        //     abort(403, 'Maximum quiz attempts exceeded');
-        // }
+        if ($attemptCount >= 3) {
+            abort(403, 'Maximum quiz attempts exceeded');
+        }
 
         $attempt = QuizAttempt::create([
             'student_registration_id' => $studentId,
@@ -65,15 +65,14 @@ class QuizController extends Controller
         }
 
         $percentage = ($score / 10) * 100;
-        $passed = $percentage >= 75;
 
         $attempt->update([
             'score' => $score,
-            'passed' => $passed,
+            'percentage' => $percentage,
             'submitted_at' => now(),
         ]);
 
-        if ($passed) {
+        if ($percentage >= 75) {
             return redirect()->route('payment.page', $studentId);
         }
 
@@ -83,5 +82,11 @@ class QuizController extends Controller
 
         return redirect()->route('quiz.start', $studentId)
             ->with('error', 'Score below 75%. Try again.');
+    }
+
+
+    public function failed()
+    {
+        return view('failed');
     }
 }

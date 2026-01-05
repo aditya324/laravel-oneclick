@@ -8,6 +8,7 @@ use App\Http\Controllers\QuizController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\QuizQuestionController;
 use App\Http\Controllers\Admin\QuizAnalyticsController;
+use App\Http\Controllers\PaymentController;
 
 Route::get('/register', function () {
     return view('register');
@@ -23,10 +24,21 @@ Route::get('/quiz/{student}', [QuizController::class, 'start'])
 Route::post('/quiz/{student}/submit', [QuizController::class, 'submit'])
     ->name('quiz.submit');
 
+Route::post('/quiz/failed', [QuizController::class, 'failed'])
+    ->name('quiz.failed');
 
-Route::get('/payment/{student}', function () {
-    return view('payment');
-})->name('payment.page');
+
+Route::get('/payment/{student}', [PaymentController::class, 'page'])
+    ->name('payment.page');
+
+Route::post('/payment/create-order', [PaymentController::class, 'createOrder'])
+    ->name('payment.create');
+
+Route::post('/payment/verify', [PaymentController::class, 'verify'])
+    ->name('payment.verify');
+
+Route::post('/payment/failed', [PaymentController::class, 'markFailed'])
+    ->name('payment.failed');
 
 Route::middleware('admin', 'auth')->prefix('admin')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])
@@ -67,10 +79,7 @@ Route::middleware('admin', 'auth')->prefix('admin')->group(function () {
 });
 
 
-Route::get('/admin-login', function () {
-    session(['is_admin' => true]);
-    return redirect()->route('admin.dashboard');
-});
+
 
 
 Route::get('/admin-test', function () {
