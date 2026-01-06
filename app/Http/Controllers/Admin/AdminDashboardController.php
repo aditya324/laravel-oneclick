@@ -11,13 +11,22 @@ class AdminDashboardController extends Controller
 {
     public function index()
     {
-        $students = StudentRegistration::withCount('quizAttempts')
-            ->with(['quizAttempts' => function ($q) {
-                $q->latest();
-            }])
+        $students = StudentRegistration::with([
+            'latestSubmittedAttempt'
+        ])
+            ->withCount('quizAttempts')
             ->get();
 
-        return view('admin.dashboard', compact('students'));
+        $totalStudents = StudentRegistration::count();
+        $attemptedStudents = StudentRegistration::has('quizAttempts')->count();
+        $notAttemptedStudents = StudentRegistration::doesntHave('quizAttempts')->count();
+
+        return view('admin.dashboard', compact(
+            'students',
+            'totalStudents',
+            'attemptedStudents',
+            'notAttemptedStudents'
+        ));
     }
 
     public function show(StudentRegistration $student)

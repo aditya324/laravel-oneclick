@@ -76,6 +76,9 @@ Route::middleware('admin', 'auth')->prefix('admin')->group(function () {
         [QuizAnalyticsController::class, 'questions']
     )
         ->name('admin.analytics.questions');
+
+    Route::get('/payments', [\App\Http\Controllers\Admin\PaymentController::class, 'index'])
+        ->name('admin.payments.index');
 });
 
 

@@ -17,6 +17,11 @@
 
         const data = await res.json();
 
+        if (!res.ok) {
+            alert(data.error || 'Payment cannot be initiated');
+            return;
+        }
+
         const options = {
             key: data.key,
             amount: 30000 * 100,

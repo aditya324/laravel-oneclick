@@ -1,5 +1,7 @@
 <h2>{{ $student->name }} – Quiz Attempts</h2>
-
+@php
+    $latest = $student->latestSubmittedAttempt;
+@endphp
 <table border="1" cellpadding="10">
     <thead>
         <tr>

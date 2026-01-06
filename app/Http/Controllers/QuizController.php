@@ -3,21 +3,21 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-
 use App\Models\QuizAttempt;
 use App\Models\QuizQuestion;
-use Carbon\Carbon;
 use App\Models\QuizAnswer;
 
 class QuizController extends Controller
 {
+    /**
+     * Start a new quiz attempt
+     */
     public function start($studentId)
     {
-        $attemptCount = QuizAttempt::where('student_registration_id', $studentId)->count();
-
-        if ($attemptCount >= 3) {
-            abort(403, 'Maximum quiz attempts exceeded');
-        }
+        $attemptCount = QuizAttempt::where(
+            'student_registration_id',
+            $studentId
+        )->count();
 
         $attempt = QuizAttempt::create([
             'student_registration_id' => $studentId,
@@ -33,30 +33,39 @@ class QuizController extends Controller
         return view('quiz', compact('questions', 'studentId', 'attempt'));
     }
 
-
-
+    /**
+     * Submit quiz attempt
+     */
     public function submit(Request $request, $studentId)
     {
         $attempt = QuizAttempt::where('student_registration_id', $studentId)
             ->latest()
-            ->first();
+            ->firstOrFail();
 
-        // Time validation (15 minutes)
-        if (now()->diffInMinutes($attempt->started_at) > 15) {
-            return back()->with('error', 'Time expired');
+        // timer check
+        if (now()->diffInSeconds($attempt->started_at) > 900) {
+            $attempt->update([
+                'submitted_at' => now(),
+                'passed' => false,
+            ]);
+
+            return redirect()->route('quiz.failed');
         }
 
+        $answers = $request->input('answers', []);
         $score = 0;
-        foreach ($request->answers as $questionId => $answer) {
+
+        foreach ($answers as $questionId => $answer) {
             $question = QuizQuestion::find($questionId);
 
-            $isCorrect = $question && $question->correct_option === $answer;
+            $isCorrect = $question &&
+                strtolower($question->correct_option) === strtolower($answer);
 
             QuizAnswer::create([
-                'quiz_attempt_id'   => $attempt->id,
-                'quiz_question_id'  => $questionId,
-                'selected_option'   => $answer,
-                'is_correct'        => $isCorrect,
+                'quiz_attempt_id'  => $attempt->id,
+                'quiz_question_id' => $questionId,
+                'selected_option'  => $answer,
+                'is_correct'       => $isCorrect,
             ]);
 
             if ($isCorrect) {
@@ -64,27 +73,28 @@ class QuizController extends Controller
             }
         }
 
+        // IMPORTANT: 10 questions assumed
         $percentage = ($score / 10) * 100;
 
+        // 🔴 THIS LINE IS WHAT WAS MISSING BEFORE
         $attempt->update([
-            'score' => $score,
-            'percentage' => $percentage,
+            'score'        => $score,
             'submitted_at' => now(),
+            'passed'       => $percentage >= 75,
         ]);
 
         if ($percentage >= 75) {
             return redirect()->route('payment.page', $studentId);
         }
 
-        if ($attempt->attempt_number >= 3) {
-            return redirect()->route('quiz.failed');
-        }
-
         return redirect()->route('quiz.start', $studentId)
-            ->with('error', 'Score below 75%. Try again.');
+            ->with('error', 'Score below 75%. Please try again.');
     }
 
 
+    /**
+     * Failed page
+     */
     public function failed()
     {
         return view('failed');

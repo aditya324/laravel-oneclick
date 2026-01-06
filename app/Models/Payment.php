@@ -63,4 +63,13 @@ class Payment extends Model
     {
         return in_array($this->status, ['failed', 'created', 'checkout_opened']);
     }
+    public function isCaptured(): bool
+    {
+        return $this->status === 'captured';
+    }
+
+    public function isPending(): bool
+    {
+        return in_array($this->status, ['created', 'checkout_opened', 'pending']);
+    }
 }
